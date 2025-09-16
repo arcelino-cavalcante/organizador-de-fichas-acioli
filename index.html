@@ -84,7 +84,7 @@
         </main>
 
         <footer class="text-center mt-12 text-gray-500 text-sm">
-            <p>&copy; 2025 Organizador de Fichas para minha princesa ❤️. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Organizador de Fichas para minha princesa❤️. Todos os direitos reservados.</p>
         </footer>
     </div>
 
@@ -318,9 +318,25 @@
             doc.setDrawColor(0);
             doc.rect(x, y, config.ticketWidth, config.ticketHeight);
             doc.line(x, y + config.headerHeight, x + config.ticketWidth, y + config.headerHeight);
-            doc.setFontSize(config.fontSizeTitle);
+
+            // Auto-ajuste do tamanho da fonte para o título
+            let fontSize = config.fontSizeTitle;
+            const padding = 4; 
+            const maxWidth = config.ticketWidth - padding;
+            
             doc.setFont('helvetica', 'bold');
-            doc.text(title, x + config.ticketWidth / 2, y + config.headerHeight / 2 + (config.fontSizeTitle / 3.5), { align: 'center' });
+            doc.setFontSize(fontSize);
+            
+            let textWidth = doc.getTextWidth(title);
+            
+            while (textWidth > maxWidth && fontSize > 5) {
+                fontSize -= 0.5;
+                doc.setFontSize(fontSize);
+                textWidth = doc.getTextWidth(title);
+            }
+
+            doc.text(title, x + config.ticketWidth / 2, y + config.headerHeight / 2 + (fontSize / 3.5), { align: 'center' });
+            
             doc.setFontSize(config.fontSizeNumber);
             doc.setFont('helvetica', 'bold');
             const numberStr = String(number).padStart(2, '0');
