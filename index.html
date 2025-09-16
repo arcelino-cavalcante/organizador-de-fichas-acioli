@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizador de Fichas de Pacientes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF e jsPDF-AutoTable para gerar o PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para a barra de rolagem */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Evita que as setas do input number apareçam */
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type='number'] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-700">Organizador de Fichas</h1>
+            <p class="text-md text-gray-500 mt-2">Gerencie a quantidade de fichas para cada especialidade e gere um relatório em PDF.</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                 <h2 class="text-2xl font-semibold text-gray-700">Fichas por Especialidade</h2>
+                 <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto flex-wrap justify-center">
+                    <button id="add-specialty-btn" class="w-full sm:w-auto bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        Adicionar Ficha
+                    </button>
+                    <button id="generate-all-tickets-btn" class="w-full sm:w-auto bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        Gerar Todas as Fichas
+                    </button>
+                    <button id="generate-pdf-btn" class="w-full sm:w-auto bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd" /></svg>
+                        Gerar Relatório PDF
+                    </button>
+                    <button id="restore-defaults-btn" class="w-full sm:w-auto bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>
+                        Restaurar Padrão
+                    </button>
+                    <button id="tutorial-btn" class="w-full sm:w-auto bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
+                        Tutorial
+                    </button>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Lista de especialidades -->
+        <main id="specialty-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Os cards serão inseridos aqui via JavaScript -->
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>&copy; 2024 Organizador de Fichas. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <!-- Modal para adicionar nova ficha -->
+    <div id="add-specialty-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg text-center leading-6 font-medium text-gray-900">Adicionar Nova Ficha</h3>
+                <form id="add-specialty-form" class="mt-4 space-y-4">
+                    <div>
+                        <label for="specialty-name" class="block text-sm font-medium text-gray-700">Especialidade / Categoria</label>
+                        <input type="text" id="specialty-name" name="specialty-name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm" required>
+                    </div>
+                    <div>
+                        <label for="specialty-shift" class="block text-sm font-medium text-gray-700">Turno</label>
+                        <select id="specialty-shift" name="specialty-shift" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-md">
+                            <option>Manhã</option>
+                            <option>Tarde</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="specialty-quantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
+                        <input type="number" id="specialty-quantity" name="specialty-quantity" value="1" min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm" required>
+                    </div>
+                </form>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button id="cancel-modal-btn" type="button" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                        Cancelar
+                    </button>
+                    <button id="save-specialty-btn" type="submit" form="add-specialty-form" class="px-4 py-2 bg-pink-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400">
+                        Adicionar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para escolher layout das fichas -->
+    <div id="layout-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+        <div class="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-xl bg-white">
+            <h3 class="text-xl text-center leading-6 font-bold text-gray-900">Escolha o Layout de Impressão</h3>
+            <p class="text-center text-gray-500 mt-2 text-sm">Selecione como as fichas devem ser organizadas na folha.</p>
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button data-layout="2x5" class="layout-option-btn flex flex-col items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all duration-200">
+                    <span class="font-bold text-lg">2 Colunas</span>
+                    <span class="text-sm text-gray-600 mt-1">5 fichas por coluna</span>
+                    <span class="text-xs text-gray-500">(10 por folha)</span>
+                </button>
+                <button data-layout="3x7" class="layout-option-btn flex flex-col items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all duration-200">
+                    <span class="font-bold text-lg">3 Colunas</span>
+                    <span class="text-sm text-gray-600 mt-1">7 fichas por coluna</span>
+                    <span class="text-xs text-gray-500">(21 por folha)</span>
+                </button>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="cancel-layout-modal-btn" type="button" class="px-6 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Tutorial -->
+    <div id="tutorial-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+        <div class="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-xl bg-white">
+            <h3 class="text-2xl text-center leading-6 font-bold text-gray-900">Como Usar o Organizador</h3>
+            <div class="mt-4 space-y-4 text-gray-700 max-h-[60vh] overflow-y-auto pr-4">
+                <div>
+                    <h4 class="font-semibold text-lg">Adicionar Ficha</h4>
+                    <p class="text-sm">Clique no botão <span class="font-bold text-pink-500">Adicionar Ficha</span>. Preencha o nome da especialidade/categoria, turno e quantidade inicial. Clique em "Adicionar" para criar um novo card.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg">Ajustar Quantidade</h4>
+                    <p class="text-sm">Em cada card, use os botões <span class="font-bold">"+"</span> e <span class="font-bold">"-"</span> para aumentar ou diminuir a quantidade de fichas. Você também pode digitar o número diretamente no campo central.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg">Remover Categoria</h4>
+                    <p class="text-sm">Clique no ícone da lixeira no canto superior direito de um card para remover a categoria permanentemente.</p>
+                </div>
+                 <div>
+                    <h4 class="font-semibold text-lg">Gerar Fichas (PDF)</h4>
+                    <p class="text-sm">Clique em <span class="font-bold text-pink-500">Gerar Fichas</span> em um card específico ou em <span class="font-bold text-pink-500">Gerar Todas as Fichas</span> no menu principal. Uma janela aparecerá para você escolher o layout de impressão (2 ou 3 colunas). O PDF será gerado com as fichas prontas para recortar.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg">Gerar Relatório (PDF)</h4>
+                    <p class="text-sm">Clique em <span class="font-bold text-pink-500">Gerar Relatório PDF</span> para criar um resumo em formato de tabela com todas as categorias e suas respectivas quantidades de fichas.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg">Salvar Dados</h4>
+                    <p class="text-sm">Todas as suas alterações são <span class="font-bold">salvas automaticamente</span> na memória do navegador. Se fechar a página, seus dados estarão aqui quando voltar.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg">Restaurar Padrão</h4>
+                    <p class="text-sm">Clique em <span class="font-bold text-gray-700">Restaurar Padrão</span> para apagar todos os dados salvos e retornar à lista de categorias original do sistema. <span class="font-bold">Atenção: esta ação não pode ser desfeita.</span></p>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="close-tutorial-modal-btn" type="button" class="px-6 py-2 bg-pink-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400">
+                    Entendi!
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const LOCAL_STORAGE_KEY = 'patientTicketsData';
+        const defaultSpecialties = [
+            { id: 1, name: 'Clínico', shift: 'Manhã', quantity: 50 }, { id: 2, name: 'Clínico', shift: 'Tarde', quantity: 50 },
+            { id: 3, name: 'Cardiologista', shift: 'Manhã', quantity: 30 }, { id: 4, name: 'Cardiologista', shift: 'Tarde', quantity: 30 },
+            { id: 5, name: 'Dermatologista', shift: 'Manhã', quantity: 25 }, { id: 6, name: 'Dermatologista', shift: 'Tarde', quantity: 25 },
+            { id: 7, name: 'Endocrinologista', shift: 'Manhã', quantity: 30 }, { id: 8, name: 'Endocrinologista', shift: 'Tarde', quantity: 30 },
+            { id: 9, name: 'Ginecologista', shift: 'Manhã', quantity: 40 }, { id: 10, name: 'Ginecologista', shift: 'Tarde', quantity: 40 },
+            { id: 11, name: 'Mastologista', shift: 'Manhã', quantity: 30 }, { id: 12, name: 'Neurologista', shift: 'Manhã', quantity: 25 },
+            { id: 13, name: 'Neurologista', shift: 'Tarde', quantity: 25 }, { id: 14, name: 'Neuropediatra', shift: 'Manhã', quantity: 25 },
+            { id: 15, name: 'Neuropediatra', shift: 'Tarde', quantity: 25 }, { id: 16, name: 'Oftalmologista', shift: 'Manhã', quantity: 100 },
+            { id: 17, name: 'Ortopedista', shift: 'Manhã', quantity: 30 }, { id: 18, name: 'Ortopedista', shift: 'Tarde', quantity: 30 },
+            { id: 19, name: 'Otorrinolaringologista', shift: 'Manhã', quantity: 25 }, { id: 20, name: 'Otorrinolaringologista', shift: 'Tarde', quantity: 25 },
+            { id: 21, name: 'Pneumologista', shift: 'Tarde', quantity: 30 }, { id: 22, name: 'Urologista', shift: 'Manhã', quantity: 40 },
+            { id: 23, name: 'Urologista', shift: 'Tarde', quantity: 40 }, { id: 24, name: 'Enfermagem', shift: 'Manhã', quantity: 25 },
+            { id: 25, name: 'Enfermagem', shift: 'Tarde', quantity: 25 }, { id: 26, name: 'Ultrassom', shift: 'Manhã', quantity: 50 },
+            { id: 27, name: 'Ultrassom', shift: 'Tarde', quantity: 50 }, { id: 28, name: 'Colonoscopia', shift: 'Manhã', quantity: 8 },
+            { id: 29, name: 'Mamografia', shift: 'Manhã', quantity: 40 }, { id: 30, name: 'Mamografia', shift: 'Tarde', quantity: 40 },
+            { id: 31, name: 'Teste do Olhinho', shift: 'Tarde', quantity: 50 },
+        ];
+        let specialties = [];
+        let ticketGenerationRequest = { type: null, id: null };
+
+        const specialtyListComponent = document.getElementById('specialty-list');
+        const generatePdfBtn = document.getElementById('generate-pdf-btn');
+        const generateAllTicketsBtn = document.getElementById('generate-all-tickets-btn');
+        const addSpecialtyBtn = document.getElementById('add-specialty-btn');
+        const addSpecialtyModal = document.getElementById('add-specialty-modal');
+        const addSpecialtyForm = document.getElementById('add-specialty-form');
+        const cancelModalBtn = document.getElementById('cancel-modal-btn');
+        const layoutModal = document.getElementById('layout-modal');
+        const cancelLayoutModalBtn = document.getElementById('cancel-layout-modal-btn');
+        const layoutOptionBtns = document.querySelectorAll('.layout-option-btn');
+        const restoreDefaultsBtn = document.getElementById('restore-defaults-btn');
+        const tutorialBtn = document.getElementById('tutorial-btn');
+        const tutorialModal = document.getElementById('tutorial-modal');
+        const closeTutorialModalBtn = document.getElementById('close-tutorial-modal-btn');
+        
+        const saveSpecialties = () => {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(specialties));
+        };
+        const loadSpecialties = () => {
+            const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            specialties = savedData ? JSON.parse(savedData) : defaultSpecialties.map(s => ({...s}));
+        };
+
+        const renderSpecialties = () => {
+            specialtyListComponent.innerHTML = '';
+            specialties.sort((a, b) => a.name.localeCompare(b.name)).forEach(spec => {
+                const card = `
+                    <div class="bg-white rounded-lg shadow-md p-5 border border-gray-200 transition-shadow hover:shadow-xl flex flex-col justify-between h-full relative">
+                        <button onclick="removeSpecialty(${spec.id})" class="absolute top-3 right-3 text-gray-400 hover:text-pink-600 transition-colors" title="Remover Categoria">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                        <div>
+                            <div class="flex justify-between items-start mb-3 pr-8">
+                                <h3 class="text-lg font-semibold text-gray-800">${spec.name}</h3>
+                                <span class="text-sm font-medium ${spec.shift === 'Manhã' ? 'bg-pink-100 text-pink-800' : 'bg-gray-100 text-gray-800'} py-1 px-3 rounded-full flex-shrink-0">${spec.shift}</span>
+                            </div>
+                        </div>
+                        <div class="flex-grow flex flex-col justify-center">
+                            <div class="flex items-center justify-center space-x-4 mt-4">
+                                <button onclick="updateQuantity(${spec.id}, -1)" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold h-10 w-10 rounded-full transition-colors flex-shrink-0">-</button>
+                                <input type="number" id="quantity-${spec.id}" value="${spec.quantity}" class="w-full text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 p-2" onchange="updateSpecialtyQuantity(${spec.id}, this.value)">
+                                <button onclick="updateQuantity(${spec.id}, 1)" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold h-10 w-10 rounded-full transition-colors flex-shrink-0">+</button>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                             <button onclick="openLayoutModal('single', ${spec.id})" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50 flex items-center justify-center">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 002 2h3m2 0h-2m2 0h2m5 0h3a2 2 0 002-2v-3a2 2 0 00-2-2h-3m-2 0h2m-2 0h-2m-2 0H9m3 0h2" /></svg>
+                                Gerar Fichas
+                            </button>
+                        </div>
+                    </div>
+                `;
+                specialtyListComponent.innerHTML += card;
+            });
+        };
+        
+        window.updateSpecialtyQuantity = (id, value) => {
+             const specIndex = specialties.findIndex(s => s.id === id);
+             if (specIndex !== -1) {
+                 specialties[specIndex].quantity = Math.max(0, parseInt(value, 10) || 0);
+                 saveSpecialties();
+             }
+        }
+
+        window.updateQuantity = (id, change) => {
+            const input = document.getElementById(`quantity-${id}`);
+            let currentValue = parseInt(input.value, 10);
+            if (isNaN(currentValue)) currentValue = 0;
+            const newValue = Math.max(0, currentValue + change);
+            input.value = newValue;
+            updateSpecialtyQuantity(id, newValue);
+        };
+        
+        window.removeSpecialty = (id) => {
+            specialties = specialties.filter(spec => spec.id !== id);
+            saveSpecialties();
+            renderSpecialties();
+        };
+
+        const restoreDefaults = () => {
+            if (confirm("Você tem certeza que deseja restaurar os dados padrão? Todas as suas alterações serão perdidas.")) {
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                location.reload();
+            }
+        };
+
+        const showModal = (modal) => modal.classList.remove('hidden');
+        const hideModal = (modal) => modal.classList.add('hidden');
+
+        window.openLayoutModal = (type, id) => {
+            ticketGenerationRequest = { type, id };
+            showModal(layoutModal);
+        };
+        const closeLayoutModal = () => hideModal(layoutModal);
+
+        const layouts = {
+            '2x5': { columns: 2, rows: 5, ticketWidth: 90, ticketHeight: 50, headerHeight: 20, xGap: 5, yGap: 5, fontSizeTitle: 12, fontSizeNumber: 36 },
+            '3x7': { columns: 3, rows: 7, ticketWidth: 60, ticketHeight: 37, headerHeight: 15, xGap: 5, yGap: 3, fontSizeTitle: 9, fontSizeNumber: 28 }
+        };
+
+        const drawTicket = (doc, x, y, config, title, number) => {
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(0);
+            doc.rect(x, y, config.ticketWidth, config.ticketHeight);
+            doc.line(x, y + config.headerHeight, x + config.ticketWidth, y + config.headerHeight);
+            doc.setFontSize(config.fontSizeTitle);
+            doc.setFont('helvetica', 'bold');
+            doc.text(title, x + config.ticketWidth / 2, y + config.headerHeight / 2 + (config.fontSizeTitle / 3.5), { align: 'center' });
+            doc.setFontSize(config.fontSizeNumber);
+            doc.setFont('helvetica', 'bold');
+            const numberStr = String(number).padStart(2, '0');
+            doc.text(numberStr, x + config.ticketWidth / 2, y + config.headerHeight + (config.ticketHeight - config.headerHeight) / 2 + (config.fontSizeNumber / 3.5), { align: 'center' });
+        };
+
+        const generateTicketsWithLayout = (layoutKey) => {
+            closeLayoutModal();
+            const config = layouts[layoutKey];
+            if (!config) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const ticketsPerPage = config.columns * config.rows;
+            const pageMargin = 10;
+            let ticketGlobalIndex = 0;
+            let anyTicketGenerated = false;
+            const specsToProcess = ticketGenerationRequest.type === 'single' ? [specialties.find(s => s.id === ticketGenerationRequest.id)] : specialties;
+            
+            for (const spec of specsToProcess) {
+                if (!spec) continue;
+                const quantity = spec.quantity;
+                if (isNaN(quantity) || quantity <= 0) continue;
+                anyTicketGenerated = true;
+                const titleText = `${spec.name.toUpperCase()} - ${spec.shift.toUpperCase()}`;
+                for (let i = 1; i <= quantity; i++) {
+                    if (ticketGlobalIndex > 0 && ticketGlobalIndex % ticketsPerPage === 0) doc.addPage();
+                    const currentPageTicketIndex = ticketGlobalIndex % ticketsPerPage;
+                    const col = currentPageTicketIndex % config.columns;
+                    const row = Math.floor(currentPageTicketIndex / config.columns);
+                    const x = pageMargin + col * (config.ticketWidth + config.xGap);
+                    const y = pageMargin + row * (config.ticketHeight + config.yGap);
+                    drawTicket(doc, x, y, config, titleText, i);
+                    ticketGlobalIndex++;
+                }
+            }
+            if (!anyTicketGenerated) {
+                 alert("Nenhuma ficha com quantidade maior que zero foi encontrada para gerar o PDF.");
+                 return;
+            }
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('pt-BR').replace(/\//g, '-');
+            const fileName = ticketGenerationRequest.type === 'single' ? `Fichas_${specsToProcess[0].name.replace(/\s/g, '_')}_${dateStr}.pdf` : `Todas_as_Fichas_${dateStr}.pdf`;
+            doc.save(fileName);
+        };
+        
+        const generateReportPDF = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let totalFichas = 0;
+            const currentData = specialties.map(spec => {
+                totalFichas += spec.quantity;
+                return [spec.name, spec.shift, spec.quantity];
+            });
+            doc.setFontSize(20);
+            doc.text("Relatório de Fichas de Pacientes", 105, 20, null, null, "center");
+            const today = new Date();
+            doc.setFontSize(10);
+            doc.text(`Data de Geração: ${today.toLocaleDateString('pt-BR')}`, 105, 28, null, null, "center");
+            doc.autoTable({
+                head: [['Especialidade', 'Turno', 'Quantidade de Fichas']],
+                body: currentData, startY: 40, headStyles: { fillColor: [55, 65, 81] }, theme: 'striped'
+            });
+            const finalY = doc.lastAutoTable.finalY || 60;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Total de Fichas Cadastradas: ${totalFichas}`, 14, finalY + 15);
+            doc.save(`Relatorio_Fichas_${today.toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+        };
+        
+        generatePdfBtn.addEventListener('click', generateReportPDF);
+        generateAllTicketsBtn.addEventListener('click', () => openLayoutModal('all', null));
+        restoreDefaultsBtn.addEventListener('click', restoreDefaults);
+        addSpecialtyBtn.addEventListener('click', () => showModal(addSpecialtyModal));
+        cancelModalBtn.addEventListener('click', () => hideModal(addSpecialtyModal));
+        addSpecialtyModal.addEventListener('click', (e) => { if (e.target.id === 'add-specialty-modal') hideModal(addSpecialtyModal); });
+        cancelLayoutModalBtn.addEventListener('click', closeLayoutModal);
+        layoutModal.addEventListener('click', (e) => { if (e.target.id === 'layout-modal') closeLayoutModal(); });
+        layoutOptionBtns.forEach(btn => btn.addEventListener('click', () => generateTicketsWithLayout(btn.dataset.layout)));
+        tutorialBtn.addEventListener('click', () => showModal(tutorialModal));
+        closeTutorialModalBtn.addEventListener('click', () => hideModal(tutorialModal));
+        tutorialModal.addEventListener('click', (e) => { if (e.target.id === 'tutorial-modal') hideModal(tutorialModal); });
+
+        addSpecialtyForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const name = addSpecialtyForm['specialty-name'].value.trim();
+            const shift = addSpecialtyForm['specialty-shift'].value;
+            const quantity = parseInt(addSpecialtyForm['specialty-quantity'].value, 10);
+            const newId = specialties.length > 0 ? Math.max(...specialties.map(s => s.id)) + 1 : 1;
+            specialties.push({ id: newId, name, shift, quantity });
+            saveSpecialties();
+            renderSpecialties();
+            addSpecialtyForm.reset();
+            hideModal(addSpecialtyModal);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSpecialties();
+            renderSpecialties();
+        });
+    </script>
+</body>
+</html>
+
